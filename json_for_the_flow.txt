@@ -1,0 +1,702 @@
+[
+    {
+        "id": "1bd1e80598ff14aa",
+        "type": "tab",
+        "label": "Flow 3",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "698473eb606be143",
+        "type": "json",
+        "z": "1bd1e80598ff14aa",
+        "name": "",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 310,
+        "y": 140,
+        "wires": [
+            [
+                "cfd31d648b3e6957",
+                "9f90459530d6b217",
+                "564d2a62fe1770e2"
+            ]
+        ]
+    },
+    {
+        "id": "cfd31d648b3e6957",
+        "type": "change",
+        "z": "1bd1e80598ff14aa",
+        "name": "Temperature Extract",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.temperature",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 520,
+        "y": 60,
+        "wires": [
+            [
+                "b6a207adb31298e3",
+                "591d579961417de7"
+            ]
+        ]
+    },
+    {
+        "id": "9f90459530d6b217",
+        "type": "change",
+        "z": "1bd1e80598ff14aa",
+        "name": "BPM Extract",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.heartrate",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 490,
+        "y": 140,
+        "wires": [
+            [
+                "3048d8f37a5e3205",
+                "6aebad91dbf24375"
+            ]
+        ]
+    },
+    {
+        "id": "564d2a62fe1770e2",
+        "type": "change",
+        "z": "1bd1e80598ff14aa",
+        "name": "Gas Level Extract",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.gas_level",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 510,
+        "y": 220,
+        "wires": [
+            [
+                "dcfb253570fcc549",
+                "f6feb10e55dcf998"
+            ]
+        ]
+    },
+    {
+        "id": "8aacc3fcc1864c78",
+        "type": "mqtt in",
+        "z": "1bd1e80598ff14aa",
+        "name": "",
+        "topic": "H_Data",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "d5f5aab78a89a213",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 140,
+        "wires": [
+            [
+                "698473eb606be143",
+                "2923386794c69f7a"
+            ]
+        ]
+    },
+    {
+        "id": "591d579961417de7",
+        "type": "ui_gauge",
+        "z": "1bd1e80598ff14aa",
+        "name": "",
+        "group": "cd93a5016155651a",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Temperature",
+        "label": "units",
+        "format": "{{value}}",
+        "min": 0,
+        "max": "80",
+        "colors": [
+            "#00b3b0",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "diff": false,
+        "className": "",
+        "x": 870,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "3048d8f37a5e3205",
+        "type": "ui_gauge",
+        "z": "1bd1e80598ff14aa",
+        "name": "",
+        "group": "7447bd16b62f7144",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "BPM",
+        "label": "units",
+        "format": "{{value}}",
+        "min": 0,
+        "max": "500",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "diff": false,
+        "className": "",
+        "x": 850,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "dcfb253570fcc549",
+        "type": "ui_gauge",
+        "z": "1bd1e80598ff14aa",
+        "name": "",
+        "group": "1d8b365ae4d393fb",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Gas Level",
+        "label": "units",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "diff": false,
+        "className": "",
+        "x": 860,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "b6a207adb31298e3",
+        "type": "ui_chart",
+        "z": "1bd1e80598ff14aa",
+        "name": "",
+        "group": "cd93a5016155651a",
+        "order": 3,
+        "width": "6",
+        "height": "5",
+        "label": "Temperature",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "80",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "604800",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 870,
+        "y": 40,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "6aebad91dbf24375",
+        "type": "ui_chart",
+        "z": "1bd1e80598ff14aa",
+        "name": "",
+        "group": "7447bd16b62f7144",
+        "order": 3,
+        "width": "6",
+        "height": "5",
+        "label": "BPM",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "500",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "604800",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 850,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f6feb10e55dcf998",
+        "type": "ui_chart",
+        "z": "1bd1e80598ff14aa",
+        "name": "",
+        "group": "1d8b365ae4d393fb",
+        "order": 3,
+        "width": "6",
+        "height": "5",
+        "label": "Gas Level",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "100",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "604800",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 860,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7338f40afa9b20ea",
+        "type": "inject",
+        "z": "1bd1e80598ff14aa",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "1",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 300,
+        "wires": [
+            [
+                "fb0a5edf886671da"
+            ]
+        ]
+    },
+    {
+        "id": "5c38e84baa932308",
+        "type": "ui_text",
+        "z": "1bd1e80598ff14aa",
+        "group": "d498e739f1367e8d",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Date",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": "",
+        "color": "#000000",
+        "x": 810,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "fb0a5edf886671da",
+        "type": "moment",
+        "z": "1bd1e80598ff14aa",
+        "name": "",
+        "topic": "",
+        "input": "",
+        "inputType": "msg",
+        "inTz": "Europe/Rome",
+        "adjAmount": 0,
+        "adjType": "days",
+        "adjDir": "add",
+        "format": "\"dddd, MMMM Do YYYY, h:mm:ss a\"",
+        "locale": "en-GB",
+        "output": "",
+        "outputType": "msg",
+        "outTz": "Europe/Rome",
+        "x": 520,
+        "y": 300,
+        "wires": [
+            [
+                "5c38e84baa932308"
+            ]
+        ]
+    },
+    {
+        "id": "ecb67e18f254d6fc",
+        "type": "ui_form",
+        "z": "1bd1e80598ff14aa",
+        "name": "",
+        "label": "Generate Report",
+        "group": "d498e739f1367e8d",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "options": [
+            {
+                "label": "Start Date",
+                "value": "start_date",
+                "type": "date",
+                "required": true,
+                "rows": null
+            },
+            {
+                "label": "End Date",
+                "value": "end_date",
+                "type": "date",
+                "required": true,
+                "rows": null
+            }
+        ],
+        "formValue": {
+            "start_date": "",
+            "end_date": ""
+        },
+        "payload": "",
+        "submit": "submit",
+        "cancel": "cancel",
+        "topic": "payload",
+        "topicType": "msg",
+        "splitLayout": "",
+        "className": "",
+        "x": 190,
+        "y": 400,
+        "wires": [
+            [
+                "c8c2522acdc65cc1",
+                "1fc25b70d45c068f"
+            ]
+        ]
+    },
+    {
+        "id": "1fc25b70d45c068f",
+        "type": "function",
+        "z": "1bd1e80598ff14aa",
+        "name": "function 1",
+        "func": "msg.payload = JSON.stringify({\n    start_time: msg.payload.start_date,\n    end_time: msg.payload.end_date\n});\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 420,
+        "wires": [
+            [
+                "fe81a837ce738240",
+                "7c7d20790e6122e4"
+            ]
+        ]
+    },
+    {
+        "id": "fe81a837ce738240",
+        "type": "AWS Lambda",
+        "z": "1bd1e80598ff14aa",
+        "aws": "38db824a0e9c0870",
+        "operation": "Invoke",
+        "LayerName": "",
+        "VersionNumber": "",
+        "StatementId": "",
+        "Action": "",
+        "Principal": "",
+        "FunctionName": "report",
+        "Name": "",
+        "FunctionVersion": "",
+        "AllowedPublishers": "",
+        "Role": "",
+        "Code": "",
+        "CodeSigningConfigArn": "",
+        "UUID": "",
+        "Qualifier": "",
+        "Arn": "",
+        "InvokeArgs": "",
+        "Resource": "",
+        "Content": "",
+        "ReservedConcurrentExecutions": "",
+        "ProvisionedConcurrentExecutions": "",
+        "Tags": "",
+        "TagKeys": "",
+        "name": "",
+        "x": 640,
+        "y": 420,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "c8c2522acdc65cc1",
+        "type": "debug",
+        "z": "1bd1e80598ff14aa",
+        "name": "debug 1",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 420,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "7c7d20790e6122e4",
+        "type": "debug",
+        "z": "1bd1e80598ff14aa",
+        "name": "debug 2",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 620,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "2923386794c69f7a",
+        "type": "debug",
+        "z": "1bd1e80598ff14aa",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 270,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "9c4bde4721b6abef",
+        "type": "ui_spacer",
+        "z": "1bd1e80598ff14aa",
+        "name": "spacer",
+        "group": "7447bd16b62f7144",
+        "order": 2,
+        "width": 1,
+        "height": 1
+    },
+    {
+        "id": "4f4135840e11d51c",
+        "type": "ui_spacer",
+        "z": "1bd1e80598ff14aa",
+        "name": "spacer",
+        "group": "cd93a5016155651a",
+        "order": 2,
+        "width": 1,
+        "height": 1
+    },
+    {
+        "id": "b4dfe6ca998b7e07",
+        "type": "ui_spacer",
+        "z": "1bd1e80598ff14aa",
+        "name": "spacer",
+        "group": "1d8b365ae4d393fb",
+        "order": 2,
+        "width": 1,
+        "height": 1
+    },
+    {
+        "id": "ff03be09e0cc54a2",
+        "type": "ui_spacer",
+        "z": "1bd1e80598ff14aa",
+        "name": "spacer",
+        "group": "d498e739f1367e8d",
+        "order": 2,
+        "width": 1,
+        "height": 1
+    },
+    {
+        "id": "d5f5aab78a89a213",
+        "type": "mqtt-broker",
+        "name": "Heart _rate",
+        "broker": "ec2-34-239-117-79.compute-1.amazonaws.com",
+        "port": "1883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "cd93a5016155651a",
+        "type": "ui_group",
+        "name": "Temperature",
+        "tab": "d5a71891f3e46a5b",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "7447bd16b62f7144",
+        "type": "ui_group",
+        "name": "BPM",
+        "tab": "d5a71891f3e46a5b",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "1d8b365ae4d393fb",
+        "type": "ui_group",
+        "name": "Gas Level",
+        "tab": "d5a71891f3e46a5b",
+        "order": 3,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "d498e739f1367e8d",
+        "type": "ui_group",
+        "name": "Report",
+        "tab": "d5a71891f3e46a5b",
+        "order": 4,
+        "disp": true,
+        "width": "9",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "38db824a0e9c0870",
+        "type": "amazon config",
+        "name": "AWS",
+        "region": "us-east-1",
+        "proxyRequired": false,
+        "proxy": ""
+    },
+    {
+        "id": "d5a71891f3e46a5b",
+        "type": "ui_tab",
+        "name": "Mody",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    }
+]

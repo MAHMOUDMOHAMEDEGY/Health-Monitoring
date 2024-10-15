@@ -1,0 +1,357 @@
+// Libraries
+#include <WiFi.h>                 
+#include <WiFiClientSecure.h>     
+#include <PubSubClient.h>         
+#include <ArduinoJson.h>          
+#include <OneWire.h>              
+#include <DallasTemperature.h>    
+#include <NTPClient.h>            
+
+// WiFi credentials
+const char* ssid = "Mahmoud's A34";                
+const char* password = "8gjvvz7js8v268e";          
+
+// Node-RED MQTT broker configuration
+#define NODE_RED_MQTT_SERVER "ec2-34-239-117-79.compute-1.amazonaws.com"        
+#define NODE_RED_MQTT_PORT 1883                                                 
+
+// AWS IoT Core credentials
+const char* AWS_IOT_ENDPOINT = "ank4rxb2ogylz-ats.iot.us-east-1.amazonaws.com"; 
+
+
+// AWS IoT Core certificates and keys
+// 1: AmazonRootCA1.pem
+const char* root_ca = R"EOF(
+-----BEGIN CERTIFICATE-----
+MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF
+ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6
+b24gUm9vdCBDQSAxMB4XDTE1MDUyNjAwMDAwMFoXDTM4MDExNzAwMDAwMFowOTEL
+MAkGA1UEBhMCVVMxDzANBgNVBAoTBkFtYXpvbjEZMBcGA1UEAxMQQW1hem9uIFJv
+b3QgQ0EgMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALJ4gHHKeNXj
+ca9HgFB0fW7Y14h29Jlo91ghYPl0hAEvrAIthtOgQ3pOsqTQNroBvo3bSMgHFzZM
+9O6II8c+6zf1tRn4SWiw3te5djgdYZ6k/oI2peVKVuRF4fn9tBb6dNqcmzU5L/qw
+IFAGbHrQgLKm+a/sRxmPUDgH3KKHOVj4utWp+UhnMJbulHheb4mjUcAwhmahRWa6
+VOujw5H5SNz/0egwLX0tdHA114gk957EWW67c4cX8jJGKLhD+rcdqsq08p8kDi1L
+93FcXmn/6pUCyziKrlA4b9v7LWIbxcceVOF34GfID5yHI9Y/QCB/IIDEgEw+OyQm
+jgSubJrIqg0CAwEAAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC
+AYYwHQYDVR0OBBYEFIQYzIU07LwMlJQuCFmcx7IQTgoIMA0GCSqGSIb3DQEBCwUA
+A4IBAQCY8jdaQZChGsV2USggNiMOruYou6r4lK5IpDB/G/wkjUu0yKGX9rbxenDI
+U5PMCCjjmCXPI6T53iHTfIUJrU6adTrCC2qJeHZERxhlbI1Bjjt/msv0tadQ1wUs
+N+gDS63pYaACbvXy8MWy7Vu33PqUXHeeE6V/Uq2V8viTO96LXFvKWlJbYK8U90vv
+o/ufQJVtMVT8QtPHRh8jrdkPSHCa2XV4cdFyQzR1bldZwgJcJmApzyMZFo6IQ6XU
+5MsI+yMRQ+hDKXJioaldXgjUkK642M4UwtBV8ob2xJNDd2ZhwLnoQdeXeGADbkpy
+rqXRfboQnoZsG4q5WTP468SQvvG5
+-----END CERTIFICATE-----
+)EOF";
+
+// 2: DeviceCertificate.crt
+const char* client_cert = R"KEY(
+-----BEGIN CERTIFICATE-----
+MIIDWTCCAkGgAwIBAgIUU813VcZKCl6tgwwQIBlxxHXfI3gwDQYJKoZIhvcNAQEL
+BQAwTTFLMEkGA1UECwxCQW1hem9uIFdlYiBTZXJ2aWNlcyBPPUFtYXpvbi5jb20g
+SW5jLiBMPVNlYXR0bGUgU1Q9V2FzaGluZ3RvbiBDPVVTMB4XDTI0MDYyMTIxMDEy
+OFoXDTQ5MTIzMTIzNTk1OVowHjEcMBoGA1UEAwwTQVdTIElvVCBDZXJ0aWZpY2F0
+ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAM02drKI/3mLWBbYRnue
+GVp2U7ccGTN9iZ5C5KDB4f6iOWJo/r+JxI5ibw6dxyH0tZIMOMPdUF3RyxPOOMtd
+kc7gdx1FoqTi+G3Aj834pavcDMCdlKA/gyYLRuWrSshl/XVmsO+m9Ov3oqoy1172
+gtsi9z+rDFlEqGzFrrsE2naFtNDPBr6MCYaOexz8PG090bk2GX0paS0IqD6w3779
+cDwqYPlBkbjA5slbZ6K6G34U3qkBhBefWwSWvlxR1/OFGuC6eCK39knAhCHspbCo
+8Mzl7E9avjy88NQNB1M6R3UPYdKFf1imBptv6YVcRrs8lZNlcJbMTo6uDNiaHWaG
+J30CAwEAAaNgMF4wHwYDVR0jBBgwFoAUVuuCpVlprVGCAQU2Jb+XZbYTckkwHQYD
+VR0OBBYEFFD5RDJmpp3LO/h+sNwib54FhKKWMAwGA1UdEwEB/wQCMAAwDgYDVR0P
+AQH/BAQDAgeAMA0GCSqGSIb3DQEBCwUAA4IBAQDy8Ldmi7pmBNj154ZsWJRMK3vf
+OCVRHihiyHz3av1yrQ/246JTTgcz5xGNtCpmYqC1JZXNOzdrLkUGetvLhIg+kZKF
+7vqjhlHS3uFZjPwCq8GKvVHziEZiV5nZrzwRVeZutrQAQuzbhkPVZ0ufnLeVfDny
+Kstt0wghsHIbHyS48Hgdo86Fv3Ab04B9K6FWZBptHwVllw30OY1sN1LAIsY5HXM9
+PLMKZJbq7gE3epNpQwtfYaAXbfXV8fyYG6vrnWxD97wiXLOuviGJQI1q1uuSwdwm
+q8HfQmcg6gR6iiK8fby9zWHPbZO0vkNNas8w5g9hYgnZbAvoiZnnKj0180yL
+-----END CERTIFICATE-----
+)KEY";
+
+// 3: Private_Key.key
+const char* client_key = R"KEY(
+-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEAzTZ2soj/eYtYFthGe54ZWnZTtxwZM32JnkLkoMHh/qI5Ymj+
+v4nEjmJvDp3HIfS1kgw4w91QXdHLE844y12RzuB3HUWipOL4bcCPzfilq9wMwJ2U
+oD+DJgtG5atKyGX9dWaw76b06/eiqjLXXvaC2yL3P6sMWUSobMWuuwTadoW00M8G
+vowJho57HPw8bT3RuTYZfSlpLQioPrDfvv1wPCpg+UGRuMDmyVtnorobfhTeqQGE
+F59bBJa+XFHX84Ua4Lp4Irf2ScCEIeylsKjwzOXsT1q+PLzw1A0HUzpHdQ9h0oV/
+WKYGm2/phVxGuzyVk2VwlsxOjq4M2JodZoYnfQIDAQABAoIBAEDnkPM20Van89yF
+2wUOJAawlhm8EVxvwC8GCTmvGMNom628d5YtBLXj/CwrSug6dZMTuoB4ZwrFZ+2D
+tALePVepNwNTGvX7s4dC+Di1A/EvT/k73d4xOFG4D1xkqOppF5kiOaQSsjRPxmr+
+WY/3d7vHe1vvxaAWTw7YF0OfbVk+r7vbdGzabMJqsPdTHQSVv5Ij9m7emsxvUiee
+m6lrq2yAcEyeS4T73jbLT7I8xXkfpbhnKAglqEurUCGGg5ZC4jEvJZ7M9uPq+U/h
+FKho5GFRni8dHzLql6jORtRJ/xmfkzhk/r6z/2PBrP0FTOU9fgTZ+Ev5q5rB0JtR
+JLsTjyECgYEA7EeDD6ruxdkPjzTxww8g1aM5iKaccsX+ZrMz4j9Q2lwYk43cHOi7
+fR1Tv/tmkKN/yGpMlyPfV5h20WwTHX6FjC2IrSDszmTPbUymJx0zNDllWLxQOkuN
+jmBVGlCx9hzqvhk9NuQ9NFT/AbYa9MZFB6KK8RlbVgjjk3T/rOSmbCcCgYEA3lcp
++SXO8VCHRy0N4OrfxiP5Gb6tQCvUn4Unx/Jksgg8IT3ENQs2R/J1PyZVIHfpxpvR
+eXWbQMNS3HoxB8Lf1fxkMpQW93g8HYQ6FoR41tSjddNSRIKAxFMKO9LM2HZ9/zda
+X+yemBU5RRijT0IBGSBHg3evt1s9C3TGAuHPAbsCgYEAvR9MZ3kRX+mrC5x8Ov5b
+8MSSo6+AoFmclMWxrNGzPOTkgw7UdYtPrwiPZaar5PAJsvhqz7tV5L5TtLMF5eDE
+snwr3y/wfA+y/DCS+dHkj1O1rD4nFVIuPx0aYVLf7zgcKQb4uXwdBUtXRh5mGzCs
+Rj0za2I5enbo+bl3gQMPtpcCgYBJtf39UnKEAB2JFD+4pEVhrAVmapeHYcCQzhU9
+LXgCqcY9gvusVjY9rfz+3Zd1Nyvyoy/UI5A/7UFoRL5Cg3GvwIf7WKswidTsOC0F
+0A87sa0rX86zVcyYyarn4F/3F3l4BgLZMFn3s3mUFbH2kbxJdzEePaysjfvz81e+
+FtyJBwKBgHniEZ7dK5kaNssTRC+x03qKY0c+D+CC4Y4FNAlfbWYbHj1o9QT+blv4
+CxqefIzAtyZ8aKQp9sQkqj154qq22eLv2MZBsAp3/tDRWLu3JYozn/o54h2DqH7b
++fe/eRwA8anUWiNXPpktNBQc9dIzFKRFpzxgue8Ez/drh/YhCv83
+-----END RSA PRIVATE KEY-----
+)KEY";
+
+
+// Declaration related to the pulse rate measurement 
+const int pulsePin = 34;                  
+
+// Variables to store pulse rate sensor values and timing to calculate BPM
+int sensorValue = 0;                      
+unsigned long lastBeatTime = 0;           
+unsigned long currentBeatTime = 0;        
+unsigned long beatInterval = 0;          
+float BPM = 0;                            
+float lastBPM = -1;                       
+const int numBeats = 10;                  
+unsigned long beatTimes[numBeats];        
+int beatIndex = 0;                        
+bool beatDetected = false;                
+
+// Declaration related to the Temperature measurement
+const int oneWireBus = 17;                
+OneWire oneWire(oneWireBus);              
+DallasTemperature sensors(&oneWire);      
+float temperatureC = 0.0;                 
+float lastTemperatureC = -1;              
+
+// Declaration related to the Gas level measurement
+const int mq2Pin = 35;                    
+int gasLevel = 0;                         
+float lastGasLevel = -1;                  
+
+// Declaration related to the message
+char msg[512];                            
+bool messageSent = true;                  
+unsigned long startTime = 0;              
+String lastMessage = "";                 
+
+
+// Node-RED MQTT client
+WiFiClient nodeRedClient;
+PubSubClient nodeRedMQTTClient(nodeRedClient);
+
+// AWS IoT Core MQTT client
+WiFiClientSecure awsClient;
+PubSubClient awsMQTTClient(awsClient);
+
+/************************************************************************************************************************************/
+
+void setup() {
+  Serial.begin(115200);           
+  setup_wifi();                   
+  /* Configure the time settings with a timezone offset of 7200 seconds (2 hours) and 
+  synchronize time with NTP servers "pool.ntp.org" and "time.nist.gov" */
+  configTime(7200, 0, "pool.ntp.org", "time.nist.gov");
+  pinMode(pulsePin, INPUT);       
+
+  // Configuration of WiFiClientSecure to use AWS IoT Core certificates
+  awsClient.setCACert(root_ca);                         
+  awsClient.setCertificate(client_cert);                
+  awsClient.setPrivateKey(client_key);                  
+  awsMQTTClient.setServer(AWS_IOT_ENDPOINT, 8883);      
+
+  // Configuration of Node-RED MQTT client
+  nodeRedMQTTClient.setServer(NODE_RED_MQTT_SERVER, NODE_RED_MQTT_PORT);    
+
+  sensors.begin();                        
+
+  // Initialize beat times array used to cconvert the sensor value into BPM
+  for (int i = 0; i < numBeats; i++) {
+    beatTimes[i] = 0;
+  }
+
+  startTime = millis(); 
+}
+
+/*****************************************************************************************************************************************/
+void setup_wifi() {
+  delay(10);
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void reconnect(PubSubClient& client, const char* clientID) {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection to ");
+    Serial.print(clientID);
+    Serial.print("...");
+    // Attempt to connect
+    if (client.connect(clientID)) {
+      Serial.println("connected");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+}
+
+String getTimestamp() {
+  // Get current time in UTC
+  struct tm timeinfo;                         
+  if (!getLocalTime(&timeinfo)) {
+    return "";                               
+  }
+
+  // Format time 
+  char buffer[25];
+  strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
+  return String(buffer);
+}
+
+// Function to trim leading and trailing spaces from a string
+String trimSpaces(String str) {
+  str.trim();
+  return str;
+}
+
+String createMessage(int bpm) {
+  // Read temperature from DS18B20 sensor
+  sensors.requestTemperatures();
+  temperatureC = sensors.getTempCByIndex(0);
+
+  if (temperatureC == -127.0) {
+    Serial.println("Error: Could not read temperature data.");
+    temperatureC = 0.0; 
+  } else {
+    Serial.print("Temperature (C): ");
+    Serial.println(temperatureC);
+  }
+
+  // Read gas level
+  gasLevel = analogRead(mq2Pin);
+  Serial.print("Gas Level: ");
+  Serial.println(gasLevel);
+
+  // Get current timestamp
+  String timestamp = getTimestamp();
+
+  // Create a JSON object
+  StaticJsonDocument<512> jsonDoc; 
+  jsonDoc["timestamp"] = timestamp;
+  jsonDoc["child_name"] = "mody";
+  jsonDoc["heartrate"] = bpm;
+  
+  char temperatureStr[6];
+  dtostrf(temperatureC, 4, 1, temperatureStr);
+  jsonDoc["temperature"] = trimSpaces(String(temperatureStr));
+
+  char gasLevelStr[6];
+  dtostrf(gasLevel / 100.0, 4, 1, gasLevelStr);  
+  jsonDoc["gas_level"] = trimSpaces(String(gasLevelStr));
+
+  // Serialize JSON to a string
+  String message;
+  serializeJson(jsonDoc, message);
+
+  return message;
+}
+
+void publishMessage(PubSubClient& client, const char* topic, String message) {
+  Serial.print("Publishing message to ");
+  Serial.print(topic);
+  Serial.print(": ");
+  Serial.println(message);
+
+  // Publish the message to the specified MQTT topic
+  if (client.publish(topic, message.c_str())) {
+    messageSent = true; 
+    lastMessage = message; 
+  } else {
+    Serial.println("Failed to publish message. Retrying next loop.");
+  }
+}
+
+
+void calculateBPM() {
+  if (beatIndex == numBeats) {
+    unsigned long totalInterval = 0;
+    for (int i = 1; i < numBeats; i++) {
+      totalInterval += (beatTimes[i] - beatTimes[i - 1]);
+    }
+    unsigned long avgInterval = totalInterval / (numBeats - 1);
+    BPM = 60000.0 / avgInterval;
+    beatIndex = 0; // Reset the index for the next set of beats
+    Serial.print("Calculated BPM: ");
+    Serial.println(BPM);
+  }
+}
+
+void loop() {
+  /* Check if the AWS MQTT client is connected, if not, attempt to reconnect */
+  if (!awsMQTTClient.connected()) {
+    reconnect(awsMQTTClient, "AWSClientID");
+  }
+  awsMQTTClient.loop();      
+
+  /* Check if the Node-RED MQTT client is connected, if not, attempt to reconnect */
+  if (!nodeRedMQTTClient.connected()) {
+    reconnect(nodeRedMQTTClient, "NodeRedClientID");
+  }
+  nodeRedMQTTClient.loop();   
+
+  // Read the pulse rate sensor value
+  sensorValue = analogRead(pulsePin);
+  //Serial.print("Sensor Value: ");
+  //Serial.println(sensorValue);
+
+  // Peak detection logic for heartbeats
+  /**/
+  if (sensorValue > 1500 && !beatDetected) {
+    currentBeatTime = millis();
+    beatInterval = currentBeatTime - lastBeatTime;
+
+    if (beatInterval > 300) { // Minimum interval to avoid false detection (300 ms corresponds to 200 BPM)
+      lastBeatTime = currentBeatTime;
+      beatTimes[beatIndex++] = currentBeatTime;
+      beatDetected = true;
+
+      Serial.print("Beat detected! Beat Index: ");
+      Serial.println(beatIndex);
+
+      if (beatIndex == numBeats) {
+        // Calculate BPM and save it
+        calculateBPM();
+      }
+    }
+  } else if (sensorValue < 1500 && beatDetected) {
+    beatDetected = false; // Reset beat detection flag
+  }
+
+  if ((millis() - startTime) > 60000) {
+    String message = createMessage(BPM);
+    // Publish message only if it is different from the last one
+    if (message != lastMessage) {
+      Serial.println(message);
+      publishMessage(awsMQTTClient, "HealthData", message); // Publish to AWS IoT Core
+      publishMessage(nodeRedMQTTClient, "H_Data", message); // Publish to Node-RED
+    }
+    startTime = millis(); 
+  }
+
+  delay(10); // Short delay to stabilize the loop
+}

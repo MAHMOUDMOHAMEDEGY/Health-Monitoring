@@ -1,0 +1,163 @@
+import boto3
+import csv
+from io import StringIO
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+from datetime import datetime
+
+
+dynamodb = boto3.resource('dynamodb')
+
+# Function to retrieve data from DynamoDB
+def get_data_from_dynamodb(start_time=None, end_time=None):
+    table = dynamodb.Table('Health_Monitoring_Data')
+    if start_time and end_time:
+        response = table.scan(
+            FilterExpression='#ts BETWEEN :start AND :end',
+            ExpressionAttributeNames={'#ts': 'timestamp'},
+            ExpressionAttributeValues={
+                ':start': start_time,
+                ':end': end_time
+            }
+        )
+    else:
+        response = table.scan()
+    return response['Items']
+
+def generate_csv(data):
+    csv_buffer = StringIO()
+    fieldnames = ['timestamp', 'child_name', 'heartrate', 'temperature', 'gas_level']
+    writer = csv.DictWriter(csv_buffer, fieldnames=fieldnames, delimiter=',')
+    writer.writeheader()
+    
+    heartrate_sum = 0
+    temperature_sum = 0
+    gas_level_sum = 0
+    count = 0
+    
+    for item in data:
+        heartrate = item.get('heartrate', 0)
+        temperature = item.get('temperature', 0)
+        gas_level = item.get('gas_level', 0)
+        
+        # Update sums and count
+        heartrate_sum += heartrate
+        temperature_sum += temperature
+        gas_level_sum += gas_level
+        count += 1
+        
+        writer.writerow({
+            'timestamp': item.get('timestamp', ''),
+            'child_name': item.get('child_name', ''),
+            'heartrate': heartrate,
+            'temperature': temperature,
+            'gas_level': gas_level
+        })
+    
+    # Calculate averages
+    if count > 0:
+        heartrate_avg = heartrate_sum / count
+        temperature_avg = temperature_sum / count
+        gas_level_avg = gas_level_sum / count
+    else:
+        heartrate_avg = 0
+        temperature_avg = 0
+        gas_level_avg = 0
+    
+    # Write averages row
+    writer.writerow({
+        'timestamp': 'Average',
+        'child_name': '',
+        'heartrate': f'{heartrate_avg:.1f}',
+        'temperature': f'{temperature_avg:.1f}',
+        'gas_level': f'{gas_level_avg:.1f}'
+    })
+    
+    return csv_buffer.getvalue()
+
+def send_email(csv_content, subject):
+    # Create a new SES resource 
+    ses = boto3.client('ses', region_name='us-east-1')
+
+    # Create a multipart/mixed parent container
+    msg = MIMEMultipart('mixed') #creates a container for the email that allows both text and attachments.
+    msg['Subject'] = subject
+    msg['From'] = 'mahmoud.ezzathelal@libero.it'
+    msg['To'] = 'mahmoud.ezzathelal@libero.it'
+    
+    # Create a multipart/alternative child container
+    msg_body = MIMEMultipart('alternative')#creates a container for different versions of the email content, such as plain text in our case
+    textpart = MIMEText('Please find the attached report.', 'plain', 'utf-8')
+    msg_body.attach(textpart)
+
+    # Attach the multipart/alternative child container to the multipart/mixed parent container
+    msg.attach(msg_body)
+
+    # Define the attachment part and encode it using MIMEApplication
+    att = MIMEApplication(csv_content)
+    att.add_header('Content-Disposition','attachment',filename='Health_report.csv')
+
+    # Attach the attachment to the parent container
+    msg.attach(att)
+
+    try:
+        # Provide the contents of the email
+        response = ses.send_raw_email(
+            Source=msg['From'],
+            Destinations=[msg['To']],
+            RawMessage={
+                'Data':msg.as_string(),
+            }
+        )
+    except Exception as e:
+        print("Error: ", e)
+    else:
+        print("Email sent! Message ID:", response['MessageId'])
+
+    return response
+
+
+def lambda_handler(event, context):
+    # Check if the event is from EventBridge (CloudWatch Events)
+    if event.get('source') == 'aws.events':
+        # EventBridge event: generate report for the current date
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        start_time = current_date + 'T00:00:00'
+        end_time = current_date + 'T23:59:59'
+        data = get_data_from_dynamodb(start_time, end_time)
+        
+        # Generate CSV content from the data
+        csv_content = generate_csv(data)
+        
+        # Send email with the report
+        send_email(csv_content, 'Periodic Health Monitoring Report')
+        
+    else:
+        # On-demand request: get start_time and end_time from the event
+        start_time = event.get('start_time')
+        end_time = event.get('end_time')
+        
+        # Retrieve data from DynamoDB
+        data = get_data_from_dynamodb(start_time, end_time)
+        
+        # Generate CSV content from the data
+        csv_content = generate_csv(data)
+        
+        # Send email with the report
+        send_email(csv_content, 'Required Health Monitoring Report')
+        
+        # Return CSV content in the response for on-demand requests
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'text/csv',
+                'Content-Disposition': 'attachment; filename="Health_report.csv"'
+            },
+            'body': csv_content
+        }
+
+    return {
+        'statusCode': 200,
+        'body': 'CSV generation and email sending process completed.'
+    }

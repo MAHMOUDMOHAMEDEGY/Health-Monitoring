@@ -1,0 +1,75 @@
+import boto3
+import json
+
+def lambda_handler(event, context):
+    # Create a DynamoDB client
+    client = boto3.client('dynamodb')
+    
+    # Log the incoming event
+    print("Received event: " + json.dumps(event, indent=2))
+    
+    try:
+        # Extract and prepare data for DynamoDB
+        item = {
+            'timestamp': {'S': event['timestamp']},
+            'child_name': {'S': event['child_name']},
+            'heartrate': {'N': str(event['heartrate'])},
+            'temperature': {'N': str(event['temperature'])},
+            'gas_level': {'N': str(event['gas_level'])}
+        }
+        
+        # Log the item to be put into DynamoDB
+        print("Putting item into DynamoDB: " + json.dumps(item, indent=2))
+        
+        # Put an item into the DynamoDB table
+        response = client.put_item(
+            TableName='Health_Monitoring_Data',
+            Item=item
+        )
+        
+        # Log the DynamoDB response
+        print("DynamoDB put_item succeeded:")
+        print(json.dumps(response, indent=2))
+        
+    except Exception as e:
+        # Log the error
+        print("Error putting item in DynamoDB:")
+        print(e)
+        raise e
+
+    # Create an SNS client
+    sns = boto3.client('sns')
+    topic_arn = 'arn:aws:sns:us-east-1:058264515128:Notification'
+    
+    # Check conditions and publish SNS messages
+    try:
+        if int(event['heartrate']) > 130 or int(event['heartrate']) < 70:
+            if int(event['temperature']) > 40 or int(event['temperature']) < 10:
+                if int(event['gas_level']) > 10:
+                    message = f"ATTENTION: An abnormality is detected. Heart rate: {event['heartrate']} bpm, Temperature: {event['temperature']} °C, gas level: {event['gas_level']} %"
+                else:
+                    message = f"ATTENTION: The detected Heart Rate is {event['heartrate']} bpm, Temperature: {event['temperature']} °C."
+            else:
+                if int(event['gas_level']) > 10:
+                    message = f"ATTENTION: An abnormality is detected. Heart Rate is {event['heartrate']} bpm, gas level: {event['gas_level']} %."
+                else:
+                    message = f"ATTENTION: The detected Heart Rate is {event['heartrate']} bpm."
+            sns.publish(TopicArn=topic_arn, Message=message)
+            print("SNS message published:", message)
+        elif int(event['temperature']) > 40 or int(event['temperature']) < 10:
+            if int(event['gas_level']) > 10:
+                message = f"ATTENTION: An abnormality is detected. Temperature: {event['temperature']} °C, gas level: {event['gas_level']} %."
+            else:
+                message = f"ATTENTION: The detected Temperature: {event['temperature']} °C."
+            sns.publish(TopicArn=topic_arn, Message=message)
+            print("SNS message published:", message)
+        elif int(event['gas_level']) > 10:
+            message = f"ATTENTION: The detected gas level: {event['gas_level']} %."
+            sns.publish(TopicArn=topic_arn, Message=message)
+            print("SNS message published:", message)
+    except Exception as e:
+        print("Error publishing SNS message:")
+        print(e)
+        raise e
+
+    return response
